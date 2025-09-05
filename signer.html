@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project VERITAS: Issuer Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/jsrsasign@11.1.0/lib/jsrsasign.min.js"></script>
+</head>
+<body>
+
+    <div class="container">
+        <h1>✍️ Project VERITAS: Issuer Dashboard</h1>
+        <p>This simulates a SEBI-registered entity signing an official communication. Type your message and click "Sign" to generate a secure, verifiable token.</p>
+        
+        <label for="message">Enter Official Message:</label>
+        <textarea id="message" rows="5" placeholder="e.g., Our company has received approval for a new product line."></textarea>
+        
+        <button id="signButton">Sign & Generate Token</button>
+        
+        <label for="outputToken">Verifiable Token (Copy this):</label>
+        <textarea id="outputToken" rows="10" readonly placeholder="Your signed token will appear here..."></textarea>
+    </div>
+
+    <script>
+        // When the Sign button is clicked
+        document.getElementById('signButton').addEventListener('click', () => {
+            const message = document.getElementById('message').value;
+            if (!message) {
+                alert("Please enter a message to sign.");
+                return;
+            }
+
+            try {
+                // 1. Generate a new Elliptic Curve key pair (secp256r1 is a standard curve)
+                const keyPair = KEYUTIL.generateKeypair("EC", "secp256r1");
+                const privateKey = keyPair.prvKeyObj;
+                const publicKeyHex = keyPair.pubKeyObj.pubKeyHex;
+
+                // 2. Create a signature object
+                const sig = new KJUR.crypto.Signature({"alg": "SHA256withECDSA"});
+                
+                // 3. Initialize with the private key for signing
+                sig.init(privateKey);
+                
+                // 4. Add the message to be signed
+                sig.updateString(message);
+                
+                // 5. Generate the signature in hex format
+                const signatureHex = sig.sign();
+
+                // 6. Bundle everything into a clear JSON object
+                const verifiableToken = {
+                    message: message,
+                    publicKeyHex: publicKeyHex,
+                    signatureHex: signatureHex,
+                    algorithm: "SHA256withECDSA",
+                    timestamp: new Date().toISOString()
+                };
+
+                // 7. Display the token in the output box, formatted for readability
+                document.getElementById('outputToken').value = JSON.stringify(verifiableToken, null, 2);
+
+            } catch (error) {
+                console.error("Signing failed:", error);
+                alert("An error occurred during signing. Check the console for details.");
+            }
+        });
+    </script>
+
+</body>
+</html>
