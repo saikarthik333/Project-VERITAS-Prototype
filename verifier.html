@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project VERITAS: Investor Shield</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/jsrsasign@11.1.0/lib/jsrsasign.min.js"></script>
+</head>
+<body>
+
+    <div class="container">
+        <h1>✅ Project VERITAS: Investor Shield</h1>
+        <p>This simulates the investor's tool. Paste the 'Verifiable Token' received from an official source to check its authenticity and integrity instantly.</p>
+        
+        <label for="tokenInput">Paste Verifiable Token Here:</label>
+        <textarea id="tokenInput" rows="10" placeholder="Paste the JSON token from the Issuer Dashboard..."></textarea>
+        
+        <button id="verifyButton">Verify Authenticity</button>
+        
+        <div id="result" class="result">
+            Awaiting token for verification...
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('verifyButton').addEventListener('click', () => {
+            const tokenString = document.getElementById('tokenInput').value;
+            const resultDiv = document.getElementById('result');
+
+            if (!tokenString) {
+                alert("Please paste a token to verify.");
+                return;
+            }
+
+            try {
+                // 1. Parse the JSON string back into an object
+                const token = JSON.parse(tokenString);
+
+                // 2. Create a signature object with the same algorithm
+                const sig = new KJUR.crypto.Signature({"alg": "SHA256withECDSA"});
+                
+                // 3. Initialize with the PUBLIC key from the token for verification
+                // The curve 'secp256r1' must match the one used for generation
+                sig.init({xy: token.publicKeyHex, curve: 'secp256r1'});
+
+                // 4. Pass the original message from the token
+                sig.updateString(token.message);
+
+                // 5. Verify the signature against the message and public key
+                const isValid = sig.verify(token.signatureHex);
+
+                // 6. Display a clear result to the user
+                if (isValid) {
+                    resultDiv.className = 'result result-valid';
+                    resultDiv.innerHTML = '<h2>✅ Verified Authentic</h2><p>This message is authentic and has not been tampered with.</p>';
+                } else {
+                    resultDiv.className = 'result result-invalid';
+                    resultDiv.innerHTML = '<h2>❌ Warning: Invalid Signature</h2><p>This message may be fraudulent or has been altered. Do not trust it.</p>';
+                }
+
+            } catch (error) {
+                console.error("Verification failed:", error);
+                resultDiv.className = 'result result-invalid';
+                resultDiv.innerHTML = '<h2>❌ Error: Invalid Token</h2><p>The provided token is malformed or corrupted. Please check the pasted content.</p>';
+            }
+        });
+    </script>
+
+</body>
+</html>
